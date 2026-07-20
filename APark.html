@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Lookup · AlliedSoft Systems</title>
+  
+  <!-- Favicon & Icons directly from AlliedSoft Systems main site -->
+  <link rel="icon" href="https://alliedsoftsystems.com/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="https://alliedsoftsystems.com/favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" href="https://alliedsoftsystems.com/apple-touch-icon.png">
+  <link rel="manifest" href="https://alliedsoftsystems.com/site.webmanifest">
+  
+  <!-- Font Awesome 6 (free) for crisp icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  
+  <style>
+    /* ----- RESET & GLOBAL ----- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #f5f5f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 24px;
+    }
+
+    /* ----- CARD – Red & White theme, premium feel ----- */
+    .card {
+      max-width: 480px;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 32px;
+      box-shadow: 0 20px 40px -12px rgba(160, 20, 20, 0.18), 0 8px 24px -8px rgba(180, 30, 30, 0.10);
+      padding: 32px 28px;
+      transition: all 0.2s ease;
+      border: 1px solid rgba(220, 60, 60, 0.15);
+      backdrop-filter: blur(0px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Red accent line on top */
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, #b22222, #dc3545, #b22222);
+      border-radius: 32px 32px 0 0;
+      opacity: 0.9;
+    }
+
+    /* ---- AlliedSoft brand header (Red & White) ---- */
+    .brand-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
+      border-bottom: 1px solid #f0e0e0;
+      padding-bottom: 20px;
+    }
+
+    .brand-icon {
+      background: #b22222;
+      color: white;
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 6px 12px -4px rgba(178, 34, 34, 0.3);
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-text .main {
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: -0.3px;
+      color: #b22222;
+      line-height: 1.2;
+    }
+
+    .brand-text .sub {
+      font-size: 12px;
+      font-weight: 600;
+      color: #7a5a5a;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .brand-text .sub i {
+      margin-right: 4px;
+      color: #b22222;
+    }
+
+    /* ----- content area ----- */
+    .lookup-container {
+      margin-top: 4px;
+    }
+
+    /* status / error / loading */
+    .status-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 12px 32px;
+      color: #4a3a3a;
+      font-size: 15px;
+      font-weight: 500;
+      text-align: center;
+      background: #fef8f8;
+      border-radius: 24px;
+      border: 1px dashed #e8c8c8;
+    }
+
+    .status-box i {
+      font-size: 36px;
+      color: #b85a5a;
+      margin-bottom: 14px;
+      opacity: 0.8;
+    }
+
+    .status-box.error {
+      border-color: #f0c0c0;
+      background: #fff4f4;
+      color: #a33a3a;
+    }
+    .status-box.error i {
+      color: #c04040;
+    }
+
+    /* ---- Contact card sections (Red & White) ---- */
+    .contact-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .contact-name {
+      font-size: 26px;
+      font-weight: 700;
+      color: #1a1a1a;
+      letter-spacing: -0.4px;
+    }
+
+    .id-badge {
+      background: #fce8e8;
+      color: #a33a3a;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 40px;
+      letter-spacing: 0.3px;
+      border: 1px solid #f0c8c8;
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.6);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .id-badge i {
+      font-size: 12px;
+      color: #b22222;
+    }
+
+    .section {
+      background: #fefaf9;
+      border: 1px solid #f0dcdc;
+      border-radius: 24px;
+      padding: 20px 20px 18px;
+      margin-top: 20px;
+      transition: 0.1s ease;
+    }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #7a4a4a;
+      margin-bottom: 12px;
+    }
+
+    .section-label i {
+      font-size: 15px;
+      color: #b22222;
+      width: 20px;
+    }
+
+    .section .value-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f1a1a;
+      margin-bottom: 14px;
+    }
+
+    /* ----- CALL BUTTONS – Primary GREEN, Emergency RED ----- */
+    /* Primary call button – keep it green */
+    .call-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: #16a34a;          /* vibrant green */
+      color: #fff;
+      text-decoration: none;
+      padding: 14px 18px;
+      border-radius: 60px;
+      font-weight: 600;
+      font-size: 16px;
+      letter-spacing: 0.2px;
+      transition: 0.15s ease;
+      border: none;
+      width: 100%;
+      box-shadow: 0 6px 14px -6px rgba(22, 163, 74, 0.4);
+    }
+
+    .call-btn i {
+      font-size: 18px;
+    }
+
+    .call-btn:hover {
+      background: #15803d;          /* darker green on hover */
+      transform: scale(1.01);
+      box-shadow: 0 10px 20px -8px rgba(22, 163, 74, 0.5);
+    }
+
+    .call-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* Emergency button – red */
+    .call-btn.emergency {
+      background: #dc2626;          /* bright red */
+      box-shadow: 0 6px 14px -6px rgba(220, 38, 38, 0.4);
+    }
+
+    .call-btn.emergency:hover {
+      background: #b91c1c;          /* darker red on hover */
+      box-shadow: 0 10px 20px -8px rgba(220, 38, 38, 0.5);
+    }
+
+    .no-number {
+      color: #7a5a5a;
+      font-weight: 500;
+      font-size: 15px;
+      background: #f5ecec;
+      padding: 12px 16px;
+      border-radius: 40px;
+      text-align: center;
+      border: 1px solid #e8d4d4;
+    }
+
+    .no-number i {
+      margin-right: 8px;
+      color: #b85a5a;
+    }
+
+    /* ---- footer / powered by (Red & White) with link to main site ---- */
+    .powered {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 14px;
+      color: #5a4a4a;
+      border-top: 1px solid #f0e0e0;
+      padding-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .powered i {
+      color: #b22222;
+      font-size: 15px;
+    }
+
+    .powered a {
+      font-weight: 700;
+      color: #b22222;
+      text-decoration: none;
+      letter-spacing: -0.2px;
+      transition: 0.15s;
+      border-bottom: 2px solid transparent;
+    }
+
+    .powered a:hover {
+      color: #8a1a1a;
+      border-bottom-color: #b22222;
+    }
+
+    .powered .dot {
+      color: #c0a0a0;
+      font-size: 4px;
+      margin: 0 4px;
+    }
+
+    .powered .version {
+      color: #9a7a7a;
+      font-size: 12px;
+    }
+
+    /* responsive */
+    @media (max-width: 480px) {
+      .card {
+        padding: 24px 18px;
+        border-radius: 28px;
+      }
+      .contact-name {
+        font-size: 22px;
+      }
+      .brand-text .main {
+        font-size: 19px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card" id="card">
+  <!-- AlliedSoft branded header - Red & White -->
+  <div class="brand-header">
+    <div class="brand-icon">
+      <i class="fas fa-shield-alt"></i>
+    </div>
+    <div class="brand-text">
+      <span class="main">AlliedSoft Systems</span>
+      <span class="sub"><i class="fas fa-id-card"></i> contact lookup</span>
+    </div>
+  </div>
+
+  <!-- dynamic content -->
+  <div class="lookup-container" id="lookupContainer">
+    <div class="status-box" id="statusBox">
+      <i class="fas fa-circle-notch fa-spin"></i>
+      <span>Loading contact …</span>
+    </div>
+  </div>
+
+  <!-- powered by AlliedSoft – with link to main site -->
+  <div class="powered">
+    <i class="fas fa-bolt"></i>
+    <span>powered by</span>
+    <a href="https://alliedsoftsystems.com/" target="_blank" rel="noopener noreferrer">
+      AlliedSoft Systems
+    </a>
+    <span class="dot">•</span>
+    <span class="version">v2.0</span>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ===== CONFIG: Apps Script Web App URL =====
+    // Replace with your actual Apps Script deployment URL
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxvnus25rLda72fcnLp6evFe7ruvSEtL0s9HPMHmquMBzYdp0J5ILU9hqRmac_Vnb5SVA/exec";
+
+    // DOM refs
+    const container = document.getElementById('lookupContainer');
+
+    // helpers
+    function getIdFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return (params.get('id') || params.get('ID') || '').trim();
+    }
+
+    function cleanNumber(num) {
+      return String(num || '').replace(/[^0-9+]/g, '');
+    }
+
+    // render status / error / data
+    function renderStatus(icon, message, isError = false) {
+      container.innerHTML = `
+        <div class="status-box ${isError ? 'error' : ''}">
+          <i class="fas ${icon}"></i>
+          <span>${message}</span>
+        </div>
+      `;
+    }
+
+    function renderContact(data) {
+      const contactName = data.contactName || '—';
+      const contactNumber = data.contactNumber || '';
+      const emergName = data.emergencyName || '—';
+      const emergNumber = data.emergencyNumber || '';
+      const id = data.id || '';
+
+      container.innerHTML = `
+        <div class="contact-header">
+          <div class="contact-name">${contactName}</div>
+          <span class="id-badge"><i class="fas fa-fingerprint"></i> ${id}</span>
+        </div>
+
+        <!-- primary contact -->
+        <div class="section">
+          <div class="section-label">
+            <i class="fas fa-phone-alt"></i> primary contact
+          </div>
+          <div class="value-name">${contactName}</div>
+          ${contactNumber ? 
+            `<a class="call-btn" href="tel:${cleanNumber(contactNumber)}">
+              <i class="fas fa-phone"></i> Call ${contactNumber}
+            </a>` :
+            `<div class="no-number"><i class="fas fa-ban"></i> No number available</div>`
+          }
+        </div>
+
+        <!-- emergency -->
+        <div class="section">
+          <div class="section-label">
+            <i class="fas fa-exclamation-triangle"></i> emergency contact
+          </div>
+          <div class="value-name">${emergName}</div>
+          ${emergNumber ? 
+            `<a class="call-btn emergency" href="tel:${cleanNumber(emergNumber)}">
+              <i class="fas fa-phone"></i> Call ${emergNumber}
+            </a>` :
+            `<div class="no-number"><i class="fas fa-ban"></i> No number available</div>`
+          }
+        </div>
+      `;
+    }
+
+    // main init
+    async function init() {
+      const id = getIdFromUrl();
+
+      // 1. check ID
+      if (!id) {
+        renderStatus(
+          'fa-exclamation-circle',
+          'Please add ?id=AP00000000001 to the URL',
+          true
+        );
+        return;
+      }
+
+      // 2. check SCRIPT_URL config
+      if (SCRIPT_URL.includes('PASTE_YOUR_APPS_SCRIPT_URL_HERE') || SCRIPT_URL === '') {
+        renderStatus(
+          'fa-cogs',
+          'SCRIPT_URL not configured. Set your Apps Script URL.',
+          true
+        );
+        return;
+      }
+
+      // 3. show loading
+      renderStatus('fa-circle-notch fa-spin', 'Fetching contact …');
+
+      try {
+        const response = await fetch(`${SCRIPT_URL}?id=${encodeURIComponent(id)}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const result = await response.json();
+
+        if (result.error) {
+          let msg = result.error;
+          if (result.error === 'ID not found') {
+            msg = `ID "${id}" not found`;
+          }
+          renderStatus('fa-search-minus', msg, true);
+          return;
+        }
+
+        renderContact(result);
+
+      } catch (err) {
+        console.error('Fetch error:', err);
+        renderStatus('fa-wifi-slash', `Could not load data: ${err.message}`, true);
+      }
+    }
+
+    init();
+  })();
+</script>
+
+</body>
+</html>
