@@ -218,50 +218,81 @@
       margin-bottom: 14px;
     }
 
-    /* ----- CALL BUTTONS – Primary GREEN, Emergency RED ----- */
-    /* Primary call button – keep it green */
-    .call-btn {
+    /* ----- BUTTONS – Call (Green), WhatsApp (Green), Emergency Call (Red), Emergency WhatsApp (Red) ----- */
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .action-buttons .btn {
+      flex: 1;
+      min-width: 120px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      background: #16a34a;          /* vibrant green */
-      color: #fff;
+      gap: 8px;
       text-decoration: none;
-      padding: 14px 18px;
+      padding: 12px 16px;
       border-radius: 60px;
       font-weight: 600;
-      font-size: 16px;
+      font-size: 14px;
       letter-spacing: 0.2px;
       transition: 0.15s ease;
       border: none;
-      width: 100%;
-      box-shadow: 0 6px 14px -6px rgba(22, 163, 74, 0.4);
+      box-shadow: 0 4px 12px -4px rgba(0,0,0,0.15);
     }
 
-    .call-btn i {
-      font-size: 18px;
+    .action-buttons .btn i {
+      font-size: 16px;
     }
 
-    .call-btn:hover {
-      background: #15803d;          /* darker green on hover */
-      transform: scale(1.01);
-      box-shadow: 0 10px 20px -8px rgba(22, 163, 74, 0.5);
+    .action-buttons .btn:active {
+      transform: scale(0.96);
     }
 
-    .call-btn:active {
-      transform: scale(0.97);
+    /* Primary Call button – green */
+    .btn-call {
+      background: #16a34a;
+      color: #fff;
+    }
+    .btn-call:hover {
+      background: #15803d;
+      transform: scale(1.02);
+      box-shadow: 0 6px 16px -4px rgba(22, 163, 74, 0.4);
     }
 
-    /* Emergency button – red */
-    .call-btn.emergency {
-      background: #dc2626;          /* bright red */
-      box-shadow: 0 6px 14px -6px rgba(220, 38, 38, 0.4);
+    /* WhatsApp button – green (brand color) */
+    .btn-whatsapp {
+      background: #25D366;
+      color: #fff;
+    }
+    .btn-whatsapp:hover {
+      background: #1da851;
+      transform: scale(1.02);
+      box-shadow: 0 6px 16px -4px rgba(37, 211, 102, 0.4);
     }
 
-    .call-btn.emergency:hover {
-      background: #b91c1c;          /* darker red on hover */
-      box-shadow: 0 10px 20px -8px rgba(220, 38, 38, 0.5);
+    /* Emergency Call – red */
+    .btn-emergency-call {
+      background: #dc2626;
+      color: #fff;
+    }
+    .btn-emergency-call:hover {
+      background: #b91c1c;
+      transform: scale(1.02);
+      box-shadow: 0 6px 16px -4px rgba(220, 38, 38, 0.4);
+    }
+
+    /* Emergency WhatsApp – red theme with WhatsApp icon */
+    .btn-emergency-whatsapp {
+      background: #dc2626;
+      color: #fff;
+    }
+    .btn-emergency-whatsapp:hover {
+      background: #b91c1c;
+      transform: scale(1.02);
+      box-shadow: 0 6px 16px -4px rgba(220, 38, 38, 0.4);
     }
 
     .no-number {
@@ -337,6 +368,11 @@
       .brand-text .main {
         font-size: 19px;
       }
+      .action-buttons .btn {
+        min-width: 100px;
+        font-size: 13px;
+        padding: 10px 12px;
+      }
     }
   </style>
 </head>
@@ -377,23 +413,51 @@
 <script>
   (function() {
     // ===== CONFIG: Apps Script Web App URL =====
-    // Replace with your actual Apps Script deployment URL
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxvnus25rLda72fcnLp6evFe7ruvSEtL0s9HPMHmquMBzYdp0J5ILU9hqRmac_Vnb5SVA/exec";
 
-    // DOM refs
     const container = document.getElementById('lookupContainer');
 
-    // helpers
     function getIdFromUrl() {
       const params = new URLSearchParams(window.location.search);
       return (params.get('id') || params.get('ID') || '').trim();
     }
 
+    // Clean number: keep only digits and '+', then format for Pakistan
     function cleanNumber(num) {
-      return String(num || '').replace(/[^0-9+]/g, '');
+      let cleaned = String(num || '').replace(/[^0-9+]/g, '');
+      // If number starts with '92' and no '+', add '+'
+      if (cleaned.startsWith('92') && !cleaned.startsWith('+')) {
+        cleaned = '+' + cleaned;
+      }
+      // If number starts with '0', convert to '+92' format
+      if (cleaned.startsWith('0')) {
+        cleaned = '+92' + cleaned.substring(1);
+      }
+      // If number is like '3234033765' (no country code, no leading 0), add '+92'
+      if (/^[3][0-9]{9}$/.test(cleaned) && !cleaned.startsWith('+')) {
+        cleaned = '+92' + cleaned;
+      }
+      return cleaned;
     }
 
-    // render status / error / data
+    // Format number for display (add leading 0 if needed)
+    function formatDisplayNumber(num) {
+      let cleaned = String(num || '').replace(/[^0-9+]/g, '');
+      // If it's +92... convert to 0... for display
+      if (cleaned.startsWith('+92')) {
+        return '0' + cleaned.substring(3);
+      }
+      // If it starts with 92 without +, add 0
+      if (cleaned.startsWith('92') && !cleaned.startsWith('+')) {
+        return '0' + cleaned.substring(2);
+      }
+      // If it's just digits and starts with 3 (like 3234033765), add 0
+      if (/^[3][0-9]{9}$/.test(cleaned)) {
+        return '0' + cleaned;
+      }
+      return cleaned;
+    }
+
     function renderStatus(icon, message, isError = false) {
       container.innerHTML = `
         <div class="status-box ${isError ? 'error' : ''}">
@@ -410,6 +474,18 @@
       const emergNumber = data.emergencyNumber || '';
       const id = data.id || '';
 
+      // Clean numbers for links
+      const cleanContact = contactNumber ? cleanNumber(contactNumber) : '';
+      const cleanEmerg = emergNumber ? cleanNumber(emergNumber) : '';
+
+      // Display numbers with leading 0
+      const displayContact = contactNumber ? formatDisplayNumber(contactNumber) : '';
+      const displayEmerg = emergNumber ? formatDisplayNumber(emergNumber) : '';
+
+      // WhatsApp links (international format without +)
+      const waContact = cleanContact ? cleanContact.replace('+', '') : '';
+      const waEmerg = cleanEmerg ? cleanEmerg.replace('+', '') : '';
+
       container.innerHTML = `
         <div class="contact-header">
           <div class="contact-name">${contactName}</div>
@@ -423,9 +499,15 @@
           </div>
           <div class="value-name">${contactName} (Vehicle Owner)</div>
           ${contactNumber ? 
-            `<a class="call-btn" href="tel:${cleanNumber(contactNumber)}">
-              <i class="fas fa-phone"></i> Call ${contactNumber}
-            </a>` :
+            `<div class="action-buttons">
+              <a class="btn btn-call" href="tel:${cleanContact}">
+                <i class="fas fa-phone"></i> Call
+              </a>
+              <a class="btn btn-whatsapp" href="https://wa.me/${waContact}" target="_blank">
+                <i class="fab fa-whatsapp"></i> WhatsApp
+              </a>
+            </div>
+            <div style="margin-top: 8px; font-size: 13px; color: #7a5a5a; text-align: center;">${displayContact}</div>` :
             `<div class="no-number"><i class="fas fa-ban"></i> No number available</div>`
           }
         </div>
@@ -437,54 +519,43 @@
           </div>
           <div class="value-name">${emergName} (Not a Vehicle Owner)</div>
           ${emergNumber ? 
-            `<a class="call-btn emergency" href="tel:${cleanNumber(emergNumber)}">
-              <i class="fas fa-phone"></i> Call ${emergNumber}
-            </a>` :
+            `<div class="action-buttons">
+              <a class="btn btn-emergency-call" href="tel:${cleanEmerg}">
+                <i class="fas fa-phone"></i> Call
+              </a>
+              <a class="btn btn-emergency-whatsapp" href="https://wa.me/${waEmerg}" target="_blank">
+                <i class="fab fa-whatsapp"></i> WhatsApp
+              </a>
+            </div>
+            <div style="margin-top: 8px; font-size: 13px; color: #7a5a5a; text-align: center;">${displayEmerg}</div>` :
             `<div class="no-number"><i class="fas fa-ban"></i> No number available</div>`
           }
         </div>
       `;
     }
 
-    // main init
     async function init() {
       const id = getIdFromUrl();
 
-      // 1. check ID
       if (!id) {
-        renderStatus(
-          'fa-exclamation-circle',
-          'Please add ?id=AP00000000001 to the URL',
-          true
-        );
+        renderStatus('fa-exclamation-circle', 'Please add ?id=AP00000000001 to the URL', true);
         return;
       }
 
-      // 2. check SCRIPT_URL config
       if (SCRIPT_URL.includes('PASTE_YOUR_APPS_SCRIPT_URL_HERE') || SCRIPT_URL === '') {
-        renderStatus(
-          'fa-cogs',
-          'SCRIPT_URL not configured. Set your Apps Script URL.',
-          true
-        );
+        renderStatus('fa-cogs', 'SCRIPT_URL not configured. Set your Apps Script URL.', true);
         return;
       }
 
-      // 3. show loading
       renderStatus('fa-circle-notch fa-spin', 'Fetching contact …');
 
       try {
         const response = await fetch(`${SCRIPT_URL}?id=${encodeURIComponent(id)}`);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const result = await response.json();
 
         if (result.error) {
-          let msg = result.error;
-          if (result.error === 'ID not found') {
-            msg = `ID "${id}" not found`;
-          }
+          let msg = result.error === 'ID not found' ? `ID "${id}" not found` : result.error;
           renderStatus('fa-search-minus', msg, true);
           return;
         }
