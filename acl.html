@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mobile Trading — Local</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app">
+<aside class="side">
+<div class="brand">📱 Mobile Trading<br><span style="font-size:12px;font-weight:500;opacity:.7">Local UI · Sheet DB</span></div>
+<div class="nav">
+<button data-page="dashboard" class="active">Dashboard</button>
+<button data-page="transaction">Purchase / Sale</button>
+<button data-page="parties">Parties</button>
+<button data-page="ledger">Party Ledger</button>
+<button data-page="imei">IMEI History</button>
+<button data-page="masters">Masters</button>
+</div>
+</aside>
+<main class="main">
+<div class="top"><h1 id="title">Dashboard</h1><button class="btn" onclick="loadAll()">↻ Refresh</button></div>
+<div id="apiBanner" class="api-banner"></div>
+
+<section id="dashboard" class="page active">
+<div class="cards">
+<div class="card"><div class="label">In Stock</div><div id="dStock" class="num">0</div></div>
+<div class="card"><div class="label">Sold</div><div id="dSold" class="num">0</div></div>
+<div class="card"><div class="label">Purchase</div><div id="dPurchase" class="num">Rs 0</div></div>
+<div class="card"><div class="label">Sales</div><div id="dSales" class="num">Rs 0</div></div>
+<div class="card"><div class="label">Profit</div><div id="dProfit" class="num">Rs 0</div></div>
+</div>
+<div class="panel"><h3>Recent Transactions</h3><div class="table-wrap"><table class="table"><thead><tr><th>Invoice</th><th>Type</th><th>Date</th><th>Party</th><th>Total</th><th>Net</th><th>Paid</th><th></th></tr></thead><tbody id="recent"></tbody></table><div id="recentSentinel" class="lazy-sentinel"></div></div></div>
+</section>
+
+<section id="transaction" class="page">
+<div class="panel">
+<div class="form-grid">
+<div class="field"><label>Transaction</label><select id="txType" onchange="txTypeChanged()"><option>Purchase</option><option>Sale</option></select></div>
+<div class="field"><label>Invoice No</label><input id="invoiceNo" placeholder="Auto"></div>
+<div class="field"><label>Date</label><input id="txDate" type="date"></div>
+<div class="field"><label id="partyLabel">Supplier</label><select id="party"></select></div>
+</div>
+<div class="form-grid" style="margin-top:10px">
+<div class="field"><label>Payment Method</label><select id="payment"><option>Cash</option><option>Bank</option><option>Credit</option><option>Other</option></select></div>
+<div class="field"><label>Discount (Rs)</label><input id="discount" type="number" min="0" value="0" oninput="updatePriceBox()"></div>
+<div class="field"><label>Paid Amount (Rs)</label><input id="paidAmount" type="number" min="0" placeholder="Full if empty" oninput="updatePriceBox()"></div>
+<div class="field"><label>Remarks</label><input id="remarks"></div>
+</div>
+</div>
+<div class="panel">
+<h3>Add Mobile</h3>
+<div class="item-form">
+<div class="scan-row">
+<input id="imei1" inputmode="numeric" placeholder="IMEI 1 — scan or type">
+<button class="btn primary" onclick="openScanner('imei1')">📷 Scan</button>
+<button class="btn" onclick="clearImei('imei1')">Clear</button>
+</div>
+<div class="scan-row" style="margin-top:8px">
+<input id="imei2" inputmode="numeric" placeholder="IMEI 2 (optional)">
+<button class="btn primary" onclick="openScanner('imei2')">📷 Scan</button>
+<button class="btn" onclick="clearImei('imei2')">Clear</button>
+</div>
+<div class="form-grid" style="margin-top:10px">
+<div class="field"><label>Brand</label><select id="brand" onchange="filterModels()"></select></div>
+<div class="field"><label>Model</label><select id="model"></select></div>
+<div class="field"><label>Color</label><select id="color"></select></div>
+<div class="field"><label>Storage</label><select id="storage"></select></div>
+<div class="field"><label>Purchase Price</label><input id="purchasePrice" type="number" min="0" oninput="updatePriceBox()"></div>
+<div class="field"><label>Sale Price</label><input id="salePrice" type="number" min="0" oninput="updatePriceBox()"></div>
+</div>
+<div class="actions" style="margin-top:10px"><button class="btn success" onclick="addItem()">+ Add Mobile</button></div>
+</div>
+<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>IMEI 1</th><th>IMEI 2</th><th>Brand/Model</th><th>Color</th><th>Cost</th><th>Sale</th><th>Profit</th><th></th></tr></thead><tbody id="items"></tbody></table></div>
+<div class="price-box">
+<div class="price-row"><span>Subtotal</span><span id="txSubtotal">Rs 0</span></div>
+<div class="price-row"><span>Discount</span><span id="txDiscount">Rs 0</span></div>
+<div class="price-row big"><span>Net Total</span><span id="txNet">Rs 0</span></div>
+<div class="price-row"><span>Paid</span><span id="txPaid">Rs 0</span></div>
+<div class="price-row"><span>Balance</span><span id="txBalance">Rs 0</span></div>
+</div>
+<div class="actions" style="justify-content:flex-end;margin-top:12px"><button class="btn primary" onclick="saveTx()">💾 Save Invoice</button></div>
+</div>
+</section>
+
+<section id="parties" class="page">
+<div class="panel">
+<h3 id="partyFormTitle">Add Party</h3>
+<div class="form-grid">
+<div class="field"><label>Type</label><select id="pType"><option>Supplier</option><option>Customer</option></select></div>
+<div class="field"><label>Name *</label><input id="pName"></div>
+<div class="field"><label>Mobile</label><input id="pMobile" inputmode="tel"></div>
+<div class="field"><label>Opening Balance</label><input id="pOpening" type="number" value="0"></div>
+<div class="field" style="grid-column:span 2"><label>Address</label><input id="pAddress"></div>
+<div class="field" style="grid-column:span 2"><label>Remarks</label><input id="pRemarks"></div>
+</div>
+<div class="actions" style="margin-top:12px">
+<button class="btn primary" id="partySaveBtn" onclick="saveParty()">+ Save Party</button>
+<button class="btn" id="partyCancelBtn" style="display:none" onclick="cancelEditParty()">Cancel Edit</button>
+</div>
+</div>
+<div class="panel">
+<h3>All Parties</h3>
+<div class="scan-row" style="margin-bottom:10px"><input id="partySearch" placeholder="Search name or mobile..." oninput="searchParties()"></div>
+<div class="table-wrap"><table class="table"><thead><tr><th>ID</th><th>Type</th><th>Name</th><th>Mobile</th><th>Opening</th><th>Address</th><th></th></tr></thead><tbody id="partyList"></tbody></table><div id="partySentinel" class="lazy-sentinel"></div></div>
+</div>
+</section>
+
+<section id="ledger" class="page">
+<div class="panel">
+<div class="form-grid">
+<div class="field" style="grid-column:span 2"><label>Select Party</label><select id="ledgerParty" onchange="loadLedger()"></select></div>
+<div class="field"><label>&nbsp;</label><button class="btn primary" style="width:100%" onclick="loadLedger()">Load Ledger</button></div>
+<div class="field"><label>&nbsp;</label><button class="btn" style="width:100%" onclick="showPayForm()">+ Add Payment</button></div>
+</div>
+<div id="payForm" style="display:none;margin-top:12px;padding:12px;background:#f9fafb;border-radius:10px">
+<div class="form-grid">
+<div class="field"><label>Date</label><input id="payDate" type="date"></div>
+<div class="field"><label>Amount</label><input id="payAmount" type="number" min="1"></div>
+<div class="field"><label>Method</label><select id="payMethod"><option>Cash</option><option>Bank</option><option>Other</option></select></div>
+<div class="field"><label>Remarks</label><input id="payRemarks"></div>
+</div>
+<div class="actions" style="margin-top:8px"><button class="btn success" onclick="savePay()">Save Payment</button><button class="btn" onclick="$('payForm').style.display='none'">Cancel</button></div>
+</div>
+</div>
+<div id="ledgerResult"></div>
+</section>
+
+<section id="imei" class="page">
+<div class="panel">
+<h3>IMEI Search</h3>
+<div class="scan-row"><input id="searchImei" inputmode="numeric" placeholder="IMEI"><button class="btn primary" onclick="openScanner('searchImei')">📷 Scan</button><button class="btn primary" onclick="searchImei()">Search</button></div>
+</div>
+<div id="imeiResult"></div>
+</section>
+
+<section id="masters" class="page">
+<div class="panel">
+<h3>Quick Masters</h3>
+<div class="form-grid">
+<div class="field"><label>Type</label><select id="masterType" onchange="masterTypeChanged()"><option>Brand</option><option>Model</option><option>Color</option><option>Storage</option></select></div>
+<div class="field" id="masterBrandWrap" style="display:none"><label>Brand</label><select id="masterBrand"></select></div>
+<div class="field"><label>Name</label><input id="masterName"></div>
+</div>
+<div class="actions" style="margin-top:12px"><button class="btn primary" onclick="saveMaster()">Add Master</button></div>
+</div>
+<div class="grid">
+<div class="panel"><h3>Brands</h3><div id="brandList"></div></div>
+<div class="panel"><h3>Colors</h3><div id="colorList"></div></div>
+<div class="panel"><h3>Storage</h3><div id="storageList"></div></div>
+<div class="panel"><h3>Models</h3><div id="modelList"></div></div>
+</div>
+</section>
+</main>
+</div>
+
+<div class="mobile-nav">
+<button data-page="dashboard">🏠<br>Home</button>
+<button data-page="transaction">🧾<br>Invoice</button>
+<button data-page="parties">👥<br>Parties</button>
+<button data-page="ledger">📒<br>Ledger</button>
+<button data-page="imei">🔎<br>IMEI</button>
+</div>
+<div id="modal" class="modal"><div class="modal-box"><div class="actions" style="justify-content:space-between"><b>Scan IMEI</b><button class="btn danger" onclick="closeScanner()">Close</button></div><div id="reader"></div><p id="scanStatus"></p></div></div>
+<div id="toast" class="toast"></div>
+
+<script src="https://unpkg.com/html5-qrcode" defer></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
