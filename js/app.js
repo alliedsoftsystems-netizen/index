@@ -200,10 +200,9 @@ function txTypeChanged() {
 }
 
 async function addItem() {
-  const imei1 = $('imei1').value.replace(/\D/g, '');
-  const imei2 = $('imei2').value.replace(/\D/g, '');
-  if (!/^\d{14,16}$/.test(imei1)) return toast('Valid IMEI 1 required', false);
-  if (imei2 && !/^\d{14,16}$/.test(imei2)) return toast('Valid IMEI 2 required', false);
+  const imei1 = $('imei1').value.trim();
+  const imei2 = $('imei2').value.trim();
+  if (!imei1) return toast('IMEI 1 required', false);
   if (imei2 && imei1 === imei2) return toast('IMEI 1 and 2 same nahi ho sakte', false);
   if (items.some(x => x.imei1 === imei1 || x.imei2 === imei1 || (imei2 && (x.imei1 === imei2 || x.imei2 === imei2)))) {
     return toast('IMEI already in this invoice', false);
@@ -472,7 +471,7 @@ async function savePay() {
 
 /* IMEI */
 async function searchImei() {
-  const v = $('searchImei').value.replace(/\D/g, '');
+  const v = $('searchImei').value.trim();
   if (!v) return toast('Enter IMEI', false);
   try {
     const r = await fetch(
@@ -583,13 +582,13 @@ async function openScanner(target) {
 
     scanner = new Html5Qrcode('reader');
     await scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 280, height: 140 } }, decoded => {
-      const digits = decoded.replace(/\D/g, '');
-      if (/^\d{14,16}$/.test(digits)) {
-        $(scanTarget).value = digits;
+      const code = String(decoded || '').trim();
+      if (code) {
+        $(scanTarget).value = code;
         toast('IMEI scanned');
         closeScanner();
       } else {
-        $('scanStatus').textContent = 'Not a 14–16 digit IMEI';
+        $('scanStatus').textContent = 'Empty scan — try again';
       }
     }, () => {});
   } catch (e) {
