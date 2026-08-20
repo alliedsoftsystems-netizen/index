@@ -2,7 +2,7 @@
 
 let masters = { brands: [], models: [], colors: [], storage: [], suppliers: [], customers: [], parties: [] };
 let items = [];
-let scanner = null, scanTarget = null;
+let scanner = null, scanTarget = null, scannerCancelled = false, scannerStarting = false;
 let editingPartyID = null;
 
 /* ---- Lazy-load state (invoices + parties) ---- */
@@ -73,6 +73,7 @@ function nav(page) {
   const titles = { dashboard: 'Dashboard', transaction: 'Purchase / Sale', parties: 'Parties', ledger: 'Party Ledger', imei: 'IMEI History', masters: 'Masters' };
   $('title').textContent = titles[page] || page;
   if (page === 'ledger') fillLedgerParty();
+  try { sessionStorage.setItem('lastPage', page); } catch (e) {}
 }
 document.querySelectorAll('[data-page]').forEach(b => b.onclick = () => nav(b.dataset.page));
 
@@ -552,11 +553,34 @@ async function removeMaster(type, id) {
 
 /* Scanner */
 async function openScanner(target) {
+  // Guard: ignore rapid double-clicks on the Scan button while a start is already in progress
+  if (scannerStarting) return;
+
   scanTarget = target;
+  scannerCancelled = false;
+  scannerStarting = true;
   $('modal').classList.add('open');
   $('scanStatus').textContent = 'Starting camera...';
+
   try {
-    if (!window.Html5Qrcode) return setTimeout(() => openScanner(target), 500);
+    // Always fully stop/clear any previous camera stream before starting a new one.
+    // (Prevents multiple live getUserMedia streams stacking up, which is what was
+    // causing the mobile browser to run out of resources and silently reload the tab.)
+    if (scanner) {
+      try { await scanner.stop(); } catch (e) {}
+      try { await scanner.clear(); } catch (e) {}
+      scanner = null;
+    }
+
+    if (!window.Html5Qrcode) {
+      scannerStarting = false;
+      if (scannerCancelled) return; // user closed the modal while we were waiting on the library
+      setTimeout(() => openScanner(target), 500);
+      return;
+    }
+
+    if (scannerCancelled) { scannerStarting = false; return; } // closed before we got here
+
     scanner = new Html5Qrcode('reader');
     await scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 280, height: 140 } }, decoded => {
       const digits = decoded.replace(/\D/g, '');
@@ -564,13 +588,19 @@ async function openScanner(target) {
         $(scanTarget).value = digits;
         toast('IMEI scanned');
         closeScanner();
-      } else $('scanStatus').textContent = 'Not a 14–16 digit IMEI';
+      } else {
+        $('scanStatus').textContent = 'Not a 14–16 digit IMEI';
+      }
     }, () => {});
   } catch (e) {
     $('scanStatus').textContent = 'Camera failed — use manual entry';
+  } finally {
+    scannerStarting = false;
   }
 }
+
 async function closeScanner() {
+  scannerCancelled = true; // cancels any pending "library not loaded yet" retry
   try { if (scanner) { await scanner.stop(); await scanner.clear(); } } catch (e) {}
   scanner = null;
   $('modal').classList.remove('open');
@@ -584,6 +614,12 @@ function init() {
   if (!API_URL || API_URL.includes('PASTE_YOUR')) {
     showApiBanner('API_URL missing — open js/config.js');
   }
+  // If the tab ever does get reloaded (e.g. by the mobile browser reclaiming memory),
+  // reopen whichever page the user was last on instead of always dropping back to Dashboard.
+  try {
+    const lastPage = sessionStorage.getItem('lastPage');
+    if (lastPage && $(lastPage)) nav(lastPage);
+  } catch (e) {}
   loadAll();
 }
 window.addEventListener('load', init);
